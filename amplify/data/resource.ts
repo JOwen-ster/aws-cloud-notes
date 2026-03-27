@@ -7,9 +7,12 @@ specifies that any unauthenticated user can "create", "read", "update",
 and "delete" any "Todo" records.
 =========================================================================*/
 const schema = a.schema({
-  Todo: a
+  Note: a
     .model({
+      title: a.string().required(),
       content: a.string(),
+      wordCount: a.integer(),
+      filePath: a.string()
     })
     .authorization((allow) => [allow.guest()]),
 });
@@ -22,7 +25,6 @@ export const data = defineData({
     defaultAuthorizationMode: 'identityPool',
   },
 });
-
 /*== STEP 2 ===============================================================
 Go to your frontend source code. From your client-side code, generate a
 Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
