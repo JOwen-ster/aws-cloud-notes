@@ -11,6 +11,7 @@ const schema = a.schema({
     .model({
       id: a.id(),
       title: a.string().required(),
+      content: a.string(),
       wordCount: a.integer(),
       filepath: a.string(), 
       dateOfCreation: a.date(),
