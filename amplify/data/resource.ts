@@ -9,10 +9,12 @@ and "delete" any "Todo" records.
 const schema = a.schema({
   Note: a
     .model({
+      id: a.id(),
       title: a.string().required(),
-      content: a.string(),
       wordCount: a.integer(),
-      filePath: a.string()
+      filepath: a.string(), 
+      dateOfCreation: a.date(),
+      user_id: a.string()
     })
     .authorization((allow) => [allow.guest()]),
 });
