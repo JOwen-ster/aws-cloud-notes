@@ -134,16 +134,19 @@ export default function DashboardPage() {
                      <ChevronRight className="rotate-90 w-6 h-6" />
                    </button>
                 </div>
+                {/*THIS IS THE STORAGE DRAG AND DROP UPLOADER*/}
+                {/*use the file path defined in amplify/storage/resource.ts*/}
                 <StorageManager
                   acceptedFileTypes={['.md', 'text/markdown']}
                   maxFileCount={10}
-                  path="public/"
+                  
+                  path={({ identityId }) => `note-files/${identityId}/`}
                   onUploadSuccess={({ key }) => {
-                    setDocuments(prev => [{ 
-                      id: Math.random().toString(), 
-                      title: key.split('/').pop() || 'new-file.md', 
-                      lastModified: new Date().toISOString().split('T')[0], 
-                      size: '0 KB' 
+                    setDocuments(prev => [{
+                      id: Math.random().toString(),
+                      title: key.split('/').pop() || 'new-file.md',
+                      lastModified: new Date().toISOString().split('T')[0],
+                      size: '0 KB'
                     }, ...prev]);
                   }}
                 />
