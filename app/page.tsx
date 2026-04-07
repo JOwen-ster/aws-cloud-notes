@@ -27,9 +27,6 @@ export default function Home() {
               >
                 Start Writing Now
               </Link>
-              <Link href="#features" className="text-sm font-semibold leading-6 text-zinc-900 flex items-center gap-1 hover:text-primary transition-colors">
-                Learn more <span aria-hidden="true">→</span>
-              </Link>
             </div>
           </div>
         </section>
@@ -95,7 +92,7 @@ export default function Home() {
         </section>
 
         {/* About Section */}
-        <section className="relative overflow-hidden bg-white py-24 sm:py-32">
+        <section id="about" className="relative overflow-hidden bg-white py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="grid grid-cols-1 gap-x-12 gap-y-16 lg:grid-cols-2 lg:items-center">
               <div>

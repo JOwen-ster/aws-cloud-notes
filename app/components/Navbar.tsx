@@ -14,7 +14,13 @@ export default function Navbar() {
           </Link>
           <div className="flex gap-4 items-center">
             <Link 
-              href="/login" 
+              href="#features" 
+              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-primary transition-colors"
+            >
+              Features
+            </Link>
+            <Link 
+              href="#about" 
               className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-primary transition-colors"
             >
               About
