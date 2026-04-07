@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuthenticator, Card, Text, Heading, SearchField } from '@aws-amplify/ui-react';
-import { StorageManager } from '@aws-amplify/ui-react-storage';
+import { FileUploader } from '@aws-amplify/ui-react-storage';
 import '@aws-amplify/ui-react-storage/styles.css';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                 </div>
                 {/*THIS IS THE STORAGE DRAG AND DROP UPLOADER*/}
                 {/*use the file path defined in amplify/storage/resource.ts*/}
-                <StorageManager
+                <FileUploader
                   acceptedFileTypes={['.md', 'text/markdown']}
                   maxFileCount={10}
                   
