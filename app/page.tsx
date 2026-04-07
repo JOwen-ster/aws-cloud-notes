@@ -61,7 +61,7 @@ export default function Home() {
                     <span className="text-base font-semibold leading-7 text-zinc-900">Blazing Fast</span>
                   </dt>
                   <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-zinc-600">
-                    <p className="flex-auto">Real-time synchronization ensures your edits are saved instantly as you type.</p>
+                    <p className="flex-auto">Real-time markdown preview is show as you type.</p>
                   </dd>
                 </div>
                 <div className="flex flex-col items-center text-center">
@@ -72,7 +72,7 @@ export default function Home() {
                     <span className="text-base font-semibold leading-7 text-zinc-900">AWS Powered</span>
                   </dt>
                   <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-zinc-600">
-                    <p className="flex-auto">Enterprise-grade security and reliability powered by AWS Amplify and Cognito.</p>
+                    <p className="flex-auto">Enterprise-grade security and reliability powered by AWS Amplify</p>
                   </dd>
                 </div>
                 <div className="flex flex-col items-center text-center">
@@ -83,7 +83,7 @@ export default function Home() {
                     <span className="text-base font-semibold leading-7 text-zinc-900">Markdown Magic</span>
                   </dt>
                   <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-zinc-600">
-                    <p className="flex-auto">Focus on content with a distraction-free markdown experience and live preview.</p>
+                    <p className="flex-auto">Focus on content with a distraction-free rich text editor</p>
                   </dd>
                 </div>
               </dl>
