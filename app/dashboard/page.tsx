@@ -3,6 +3,7 @@
 import { useAuthenticator, Card, Text, Heading, SearchField } from '@aws-amplify/ui-react';
 import { FileUploader } from '@aws-amplify/ui-react-storage';
 import '@aws-amplify/ui-react-storage/styles.css';
+import { uploadData } from 'aws-amplify/storage';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Clock, LogOut, ChevronRight, User } from 'lucide-react';
@@ -136,6 +137,7 @@ export default function DashboardPage() {
                 </div>
                 {/*THIS IS THE STORAGE DRAG AND DROP UPLOADER*/}
                 {/*use the file path defined in amplify/storage/resource.ts*/}
+                {/* https://ui.docs.amplify.aws/react/connected-components/storage/fileuploader/ */}
                 <FileUploader
                   acceptedFileTypes={['.md', 'text/markdown']}
                   maxFileCount={10}
