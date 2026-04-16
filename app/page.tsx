@@ -103,7 +103,7 @@ export default function Home() {
                 <div className="mt-8 flex gap-4">
                   <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <p className="text-sm font-medium text-blue-900">&quot;The interface is so clean, I can finally focus on just writing.&quot;</p>
-                    <p className="mt-2 text-xs text-blue-600">- Early Beta User</p>
+                    <p className="mt-2 text-xs text-blue-600">— Early Beta User</p>
                   </div>
                 </div>
               </div>
