@@ -9,6 +9,9 @@ and "delete" any "Todo" records.
 const schema = a.schema({
   Note: a
     .model({
+      // for the uuid created here, we should check if the generated one exists
+      // even though its VERY VERY VERY unlikely
+      // whenever a note is uploaded or created from new/scratch check before assigning the id
       id: a.id(), // unique id for the current note
       title: a.string().required(),
       content: a.string(), // not needed? we are using amplify storage for content, maybe this can be a description or taken out
