@@ -9,10 +9,10 @@ and "delete" any "Todo" records.
 const schema = a.schema({
   Note: a
     .model({
-      id: a.id(), // unique not id
+      id: a.id(), // unique id for the current note
       title: a.string().required(),
       content: a.string(), // not needed? we are using amplify storage for content, maybe this can be a description or taken out
-      wordCount: a.integer(),
+      wordCount: a.integer(), // may estimate this by line count
       filepath: a.string(), // example? /notes-files/ USERS_AUTH_ENTITY_ID / id (this is the id field in the schema)
       dateOfCreation: a.date(),
       user_id: a.string() // this data is from the user object (getCurrentUser().userId), see @/amplify/auth/resource
