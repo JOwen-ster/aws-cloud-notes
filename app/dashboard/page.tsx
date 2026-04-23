@@ -16,6 +16,12 @@ const MOCK_DOCS = [
   { id: '4', title: 'NextJS Roadmap.md', lastModified: '2026-03-25', size: '3.2 KB' },
 ];
 
+// import type { Schema } from "../amplify/data/resource";
+// import { generateClient } from "aws-amplify/data";
+
+// const client = generateClient<Schema>();
+// THEN DO client.model.Note.list() TO FETCH ALL NOTES AND RENDER THEM
+
 export default function DashboardPage() {
   const { user, signOut, authStatus } = useAuthenticator((context) => [context.user, context.authStatus]);
   const router = useRouter();

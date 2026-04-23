@@ -11,11 +11,11 @@ const schema = a.schema({
     .model({
       id: a.id(),
       title: a.string().required(),
-      content: a.string(),
+      content: a.string(), // not needed? we are using amplify storage for content sotrage
       wordCount: a.integer(),
-      filepath: a.string(), 
+      filepath: a.string(), // example? /notes-files/ USERS_AUTH_ENTITY_ID / id (this is the id field in the schema)
       dateOfCreation: a.date(),
-      user_id: a.string()
+      user_id: a.string() // may not need since 
     })
     .authorization((allow) => [allow.owner()]),
 });
