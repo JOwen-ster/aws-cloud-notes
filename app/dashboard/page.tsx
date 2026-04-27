@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Clock, LogOut, ChevronRight, User } from 'lucide-react';
 
+
+
 // Mock data for documents
 const MOCK_DOCS = [
   { id: '1', title: 'Project Overview.md', lastModified: '2026-03-20', size: '2.4 KB' },
@@ -16,31 +18,71 @@ const MOCK_DOCS = [
   { id: '4', title: 'NextJS Roadmap.md', lastModified: '2026-03-25', size: '3.2 KB' },
 ];
 
-// import type { Schema } from "../amplify/data/resource";
-// import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
+import { generateClient } from "aws-amplify/data";
 
-// const client = generateClient<Schema>();
+const client = generateClient<Schema>({
+  authMode: 'userPool'
+});
 // THEN DO client.model.Note.list() TO FETCH ALL NOTES AND RENDER THEM
-
+interface NoteDocument {
+  id: string;
+  title: string;
+  lastModified: string;
+  size: string;
+}
 export default function DashboardPage() {
   const { user, signOut, authStatus } = useAuthenticator((context) => [context.user, context.authStatus]);
   const router = useRouter();
-  const [documents, setDocuments] = useState(MOCK_DOCS);
+  const [documents, setDocuments] = useState<NoteDocument[]>([]);
   const [showUpload, setShowUpload] = useState(false);
 
-  // useEffect(() => {
-  //   if (authStatus === 'unauthenticated') {
-  //     router.push('/login');
-  //   }
-  // }, [authStatus, router]);
+  useEffect(() => {
+  // 1. Handle Redirection
+  if (authStatus === 'unauthenticated') {
+    router.push('/login');
+    return;
+  }
 
-  // if (authStatus !== 'authenticated' || !user) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  //     </div>
-  //   );
-  // }
+  // 2. Define the Fetching Logic
+  const fetchNotes = async () => {
+    // Only fetch if we are officially authenticated
+    if (authStatus !== 'authenticated') return;
+
+    try {
+      const { data: notes, errors } = await client.models.Note.list();
+      
+      if (errors) {
+        console.error("Database fetch errors:", JSON.stringify(errors, null, 2));
+        return;
+      }
+
+      // 3. Map DynamoDB data to your UI's expected format
+      // We use the "unknown as any[]" trick to bypass the strict linter rules
+      const formattedNotes = notes.map((note) => ({
+        id: note.id,
+        title: note.title,
+        // Using a double-cast to 'unknown' first satisfies the strict conversion rules
+        lastModified: (note as unknown as { dateOfCreation: string }).dateOfCreation || 'Recently',
+        size: 'Stored'
+      })) as NoteDocument[];
+
+      setDocuments(formattedNotes);
+    } catch (err) {
+      console.error("Failed to synchronize dashboard data:", err);
+    }
+  };
+
+  fetchNotes();
+}, [authStatus, router]); // Trigger whenever auth state changes
+
+   if (authStatus !== 'authenticated' || !user) {
+     return (
+       <div className="flex items-center justify-center min-h-screen">
+         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+       </div>
+     );
+   }
 
   return (
     <div className="min-h-screen bg-zinc-50 relative">
@@ -149,13 +191,38 @@ export default function DashboardPage() {
                   maxFileCount={10}
                   
                   path={({ identityId }) => `note-files/${identityId}/`}
-                  onUploadSuccess={({ key }) => {
-                    setDocuments(prev => [{
-                      id: Math.random().toString(),
-                      title: key.split('/').pop() || 'new-file.md',
-                      lastModified: new Date().toISOString().split('T')[0],
-                      size: '0 KB'
-                    }, ...prev]);
+                  onUploadSuccess={async({ key }) => {
+                    // 1. Extract the title safely
+                    const fileName = key?.split('/').pop() || 'new-file.md';
+                    try {
+                      // 2. Save the metadata to Amplify Data (DynamoDB)
+                      // Amplify automatically generates a unique string 'id' for this record
+                      const { data: newNote, errors } = await client.models.Note.create({
+                      title: fileName,
+                      filepath: key, // Store the S3 path so you can retrieve it later
+                      user_id: user?.userId, // Link it to the logged-in user
+                      dateOfCreation: new Date().toISOString().split('T')[0]
+                      });
+
+                      if (errors) {
+                        console.error("Database save errors:", JSON.stringify(errors, null, 2));
+                        return;
+                      }
+                     
+                    // 3. Update the UI using the real database ID
+                      if (newNote) {
+                        const savedNote = newNote as unknown as { id: string; dateOfCreation?: string };
+                        setDocuments(prev => [{
+                          
+                          id: savedNote.id, // Using the real unique ID from DynamoDB
+                          title: fileName,
+                          lastModified: savedNote.dateOfCreation || new Date().toISOString().split('T')[0],
+                          size: 'Uploaded'
+                        }, ...prev]);
+                      }
+                    } catch (error) {
+                      console.error("Failed to save note metadata:", error);
+                    }
                   }}
                 />
               </div>
