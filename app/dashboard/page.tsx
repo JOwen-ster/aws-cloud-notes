@@ -63,7 +63,7 @@ export default function DashboardPage() {
         id: note.id,
         title: note.title,
         // Using a double-cast to 'unknown' first satisfies the strict conversion rules
-        lastModified: (note as unknown as { dateOfCreation: string }).dateOfCreation || 'Recently',
+        lastModified: note.dateOfCreation ?? "Recently",
         size: 'Stored'
       })) as NoteDocument[];
 
@@ -261,6 +261,7 @@ export default function DashboardPage() {
               {documents.map((doc) => (
                 <div 
                   key={doc.id} 
+                  onClick={() => router.push(`/notes/${doc.id}`)}
                   className="group bg-white rounded-[2rem] border border-zinc-200 p-6 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer flex flex-col justify-between min-h-[220px]"
                 >
                   <div>
