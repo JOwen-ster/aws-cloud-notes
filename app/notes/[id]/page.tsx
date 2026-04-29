@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '@/amplify/data/resource';
+import { downloadData } from 'aws-amplify/storage';
 
 const client = generateClient<Schema>();
 
@@ -12,6 +13,7 @@ export default function NotePage() {
   const id = params.id as string;
 
   const [note, setNote] = useState<Schema['Note']['type'] | null>(null);
+  const [content, setContent] = useState<string>('');
 
   useEffect(() => {
     async function fetchNote() {
@@ -23,6 +25,15 @@ export default function NotePage() {
       }
 
       setNote(data);
+
+      if (data?.filepath) {
+        const result = await downloadData({
+          path: data.filepath,
+        }).result;
+
+        const text = await result.body.text();
+        setContent(text);
+      }
     }
 
     if (id) fetchNote();
@@ -39,6 +50,10 @@ export default function NotePage() {
       <div className="mt-4 text-sm text-zinc-500">
         <p>Created: {note.dateOfCreation ?? 'Unknown'}</p>
         <p>File path: {note.filepath ?? 'No file path saved'}</p>
+      </div>
+
+      <div className="mt-8 whitespace-pre-wrap rounded-lg border p-4">
+        {content || 'No file content found.'}
       </div>
     </main>
   );
