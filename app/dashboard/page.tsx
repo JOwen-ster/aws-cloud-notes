@@ -7,8 +7,7 @@ import { uploadData } from 'aws-amplify/storage';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Clock, LogOut, ChevronRight, User } from 'lucide-react';
-
-
+import { getCurrentUser } from "aws-amplify/auth";
 
 // Mock data for documents
 const MOCK_DOCS = [
@@ -18,7 +17,7 @@ const MOCK_DOCS = [
   { id: '4', title: 'NextJS Roadmap.md', lastModified: '2026-03-25', size: '3.2 KB' },
 ];
 
-import type { Schema } from "@/amplify/data/resource";
+import { type Schema } from "@/amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
 
 const client = generateClient<Schema>({
@@ -142,6 +141,45 @@ export default function DashboardPage() {
                   Upload
                 </button>
                 <button 
+                // Creating blank new document
+                  onClick={async () => {
+                    //console.log("new doc button clicked, starting try method");
+                    try {
+                      const doc_id = crypto.randomUUID();
+                      const user = (await getCurrentUser()).userId;
+
+                      //console.log("starting new doc gen");
+
+                      const { errors, data: newNote } = await client.models.Note.create({
+                        id: doc_id,
+                        title: "untitled.md",
+                        content: "",
+                        wordCount: 0,
+                        filepath: `note-files/${user}/${doc_id}`,
+                        user_id: user,
+                        dateOfCreation: new Date().toISOString().split('T')[0]
+                      });
+
+                      if (errors) {
+                        console.error("Generating new note failed: ", errors);
+                        return;
+                      }
+
+                      //console.log("starting to store new doc");
+
+                      if (newNote) {
+                        const blankNote = newNote as unknown as { id: string; dateOfCreation?: string };
+                        setDocuments(prev => [{
+                          id: blankNote.id,
+                          title: "untitled.md",
+                          lastModified: blankNote.dateOfCreation || new Date().toISOString().split('T')[0],
+                          size: 'New'
+                        }, ...prev]);
+                      }
+                    } catch {
+                      console.error("Saving new note metadata failed");
+                    }
+                  }}
                   className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white hover:bg-primary/90 rounded-xl text-sm font-bold transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 active:scale-95"
                 >
                   <Plus size={18} />
