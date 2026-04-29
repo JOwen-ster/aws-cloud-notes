@@ -1,5 +1,14 @@
-// THIS IS THE CORRECT FILE TO EDIT, THE REST UNDER /edit ARE ONLY TO REDIRECT YOU TO THE ROOT IN CASE THE URL DOESNT HAVE ALL PARAMS
-// CREATE AND /API ROUTE TO VERIFY AND ACCES THE FILE CONTENT FORM AMPLIFY STORAGE
-export default function EditIndexPage() {
-  return <></>
+import Editor from "@/app/components/Editor";
+
+interface EditorPageProps {
+  params: Promise<{
+    fileid: string;
+  }>;
+}
+
+export default async function EditorPage({ params }: EditorPageProps) {
+  const { fileid } = await params;
+  const decodedFileId = decodeURIComponent(fileid);
+
+  return <Editor initialFileName={decodedFileId} initialContent="" />;
 }

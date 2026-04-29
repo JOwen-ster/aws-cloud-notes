@@ -1,4 +1,4 @@
-import './globals.css';
+import '@/app/globals.css';
 import ConfigureAmplifyClientSide from './components/ConfigureAmplify';
 import AuthenticatorProvider from './components/AuthenticatorProvider';
 
