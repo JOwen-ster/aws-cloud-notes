@@ -1,19 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '@/amplify/data/resource';
 import { downloadData } from 'aws-amplify/storage';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const client = generateClient<Schema>();
 
 export default function NotePage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [note, setNote] = useState<Schema['Note']['type'] | null>(null);
-  const [content, setContent] = useState<string>('');
+  const [content, setContent] = useState('');
+  const [preview, setPreview] = useState(false);
 
   useEffect(() => {
     async function fetchNote() {
@@ -40,21 +44,40 @@ export default function NotePage() {
   }, [id]);
 
   if (!note) {
-    return <div className="p-8">Loading note...</div>;
+    return <p className="p-6">Loading note...</p>;
   }
 
   return (
-    <main className="p-8">
-      <h1 className="text-3xl font-bold">{note.title}</h1>
+    <main className="p-6 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+        >
+          ← Back
+        </button>
 
-      <div className="mt-4 text-sm text-zinc-500">
-        <p>Created: {note.dateOfCreation ?? 'Unknown'}</p>
-        <p>File path: {note.filepath ?? 'No file path saved'}</p>
+        <button
+          onClick={() => setPreview(!preview)}
+          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+        >
+          {preview ? 'Plain Text' : 'Preview'}
+        </button>
       </div>
 
-      <div className="mt-8 whitespace-pre-wrap rounded-lg border p-4">
-        {content || 'No file content found.'}
-      </div>
+      <h1 className="text-2xl font-bold mb-4">{note.title}</h1>
+
+      {preview ? (
+        <div className="prose max-w-none border rounded p-4 bg-white">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content}
+          </ReactMarkdown>
+        </div>
+      ) : (
+        <pre className="whitespace-pre-wrap border rounded p-4 bg-gray-50">
+          {content}
+        </pre>
+      )}
     </main>
   );
 }
