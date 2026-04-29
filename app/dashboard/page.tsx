@@ -261,7 +261,7 @@ export default function DashboardPage() {
               {documents.map((doc) => (
                 <div 
                   key={doc.id} 
-                  onClick={() => router.push(`/notes/${doc.id}`)}
+                  onClick={() => router.push(`/edit/${doc.id}`)}
                   className="group bg-white rounded-[2rem] border border-zinc-200 p-6 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer flex flex-col justify-between min-h-[220px]"
                 >
                   <div>
@@ -269,7 +269,30 @@ export default function DashboardPage() {
                       <div className="bg-blue-50 p-4 rounded-2xl text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm">
                         <FileText size={28} />
                       </div>
-                      <button className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Delete">
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+
+                          const confirmDelete = confirm(`Delete "${doc.title}"?`);
+                          if (!confirmDelete) return;
+
+                          const { errors } = await client.models.Note.delete({
+                            id: doc.id,
+                          });
+
+                          if (errors) {
+                            console.error(errors);
+                            alert('Failed to delete note.');
+                            return;
+                          }
+
+                          setDocuments((prevDocuments) =>
+                            prevDocuments.filter((item) => item.id !== doc.id)
+                          );
+                        }}
+                        className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                        title="Delete"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </div>
