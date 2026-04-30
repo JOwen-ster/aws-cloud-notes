@@ -3,34 +3,27 @@
 import { useAuthenticator, Card, Text, Heading, SearchField } from '@aws-amplify/ui-react';
 import { FileUploader } from '@aws-amplify/ui-react-storage';
 import '@aws-amplify/ui-react-storage/styles.css';
-import { uploadData } from 'aws-amplify/storage';
+import { uploadData, remove } from 'aws-amplify/storage';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Clock, LogOut, ChevronRight, User } from 'lucide-react';
 import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
 
-// Mock data for documents
-const MOCK_DOCS = [
-  { id: '1', title: 'Project Overview.md', lastModified: '2026-03-20', size: '2.4 KB' },
-  { id: '2', title: 'Ideas and Brainstorming.md', lastModified: '2026-03-22', size: '1.1 KB' },
-  { id: '3', title: 'Personal Journal.md', lastModified: '2026-03-24', size: '5.8 KB' },
-  { id: '4', title: 'NextJS Roadmap.md', lastModified: '2026-03-25', size: '3.2 KB' },
-];
-
 import { type Schema } from "@/amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
-import { error } from 'console';
 
 const client = generateClient<Schema>({
   authMode: 'userPool'
 });
-// THEN DO client.model.Note.list() TO FETCH ALL NOTES AND RENDER THEM
+
 interface NoteDocument {
   id: string;
   title: string;
   lastModified: string;
   size: string;
+  filepath: string;
 }
+
 export default function DashboardPage() {
   const { user, signOut, authStatus } = useAuthenticator((context) => [context.user, context.authStatus]);
   const router = useRouter();
@@ -38,51 +31,76 @@ export default function DashboardPage() {
   const [showUpload, setShowUpload] = useState(false);
 
   useEffect(() => {
-  // 1. Handle Redirection
-  if (authStatus === 'unauthenticated') {
-    router.push('/login');
-    return;
-  }
+    // 1. Handle Redirection
+    if (authStatus === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
 
-  // 2. Define the Fetching Logic
-  const fetchNotes = async () => {
-    // Only fetch if we are officially authenticated
-    if (authStatus !== 'authenticated') return;
+    // 2. Define the Fetching Logic
+    const fetchNotes = async () => {
+      if (authStatus !== 'authenticated') return;
+
+      try {
+        const { data: notes, errors } = await client.models.Note.list();
+        
+        if (errors) {
+          console.error("Database fetch errors:", JSON.stringify(errors, null, 2));
+          return;
+        }
+
+        // 3. Map DynamoDB data
+        const formattedNotes = notes.map((note) => ({
+          id: note.id,
+          title: note.title,
+          lastModified: (note as unknown as { dateOfCreation: string }).dateOfCreation || 'Recently',
+          size: 'Stored',
+          filepath: (note as unknown as { filepath: string }).filepath || '' // Added filepath mapping
+        })) as NoteDocument[];
+
+        setDocuments(formattedNotes);
+      } catch (err) {
+        console.error("Failed to synchronize dashboard data:", err);
+      }
+    };
+
+    fetchNotes();
+  }, [authStatus, router]); 
+
+  // --- NEW DELETION FUNCTION ---
+  const handleDelete = async (noteId: string, s3Path: string) => {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
 
     try {
-      const { data: notes, errors } = await client.models.Note.list();
-      
+      // 1. Delete from Amazon S3
+      if (s3Path) {
+        await remove({ path: s3Path });
+      }
+
+      // 2. Delete from DynamoDB
+      const { errors } = await client.models.Note.delete({ id: noteId });
+
       if (errors) {
-        console.error("Database fetch errors:", JSON.stringify(errors, null, 2));
+        console.error("Database deletion error:", JSON.stringify(errors, null, 2));
         return;
       }
 
-      // 3. Map DynamoDB data to your UI's expected format
-      // We use the "unknown as any[]" trick to bypass the strict linter rules
-      const formattedNotes = notes.map((note) => ({
-        id: note.id,
-        title: note.title,
-        // Using a double-cast to 'unknown' first satisfies the strict conversion rules
-        lastModified: (note as unknown as { dateOfCreation: string }).dateOfCreation || 'Recently',
-        size: 'Stored'
-      })) as NoteDocument[];
-
-      setDocuments(formattedNotes);
-    } catch (err) {
-      console.error("Failed to synchronize dashboard data:", err);
+      // 3. Update local UI state
+      setDocuments((prev) => prev.filter((doc) => doc.id !== noteId));
+      
+    } catch (error) {
+      console.error("Deletion process failed:", error);
     }
   };
+  // ------------------------------
 
-  fetchNotes();
-}, [authStatus, router]); // Trigger whenever auth state changes
-
-   if (authStatus !== 'authenticated' || !user) {
-     return (
-       <div className="flex items-center justify-center min-h-screen">
-         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-       </div>
-     );
-   }
+  if (authStatus !== 'authenticated' || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 relative">
@@ -94,7 +112,6 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-zinc-900 leading-none mb-1">
-              {/* {user.username} */}
               User
             </span>
             <span className="text-[10px] text-zinc-400 uppercase tracking-tighter font-semibold">
@@ -142,18 +159,18 @@ export default function DashboardPage() {
                   Upload
                 </button>
                 <button 
-                // Creating blank new document
                   onClick={async () => {
                     try {
                       const user = (await getCurrentUser()).userId;
                       const identityId = (await fetchAuthSession()).identityId;
+                      const newFilePath = `note-files/${identityId}/untitled.md`;
 
                       // New metadata
                       const { errors, data: newNote } = await client.models.Note.create({
                         title: "untitled.md",
                         content: "# untitled note",
                         wordCount: 0,
-                        filepath: `note-files/${identityId}/untitled.md`,
+                        filepath: newFilePath,
                         user_id: user,
                         dateOfCreation: new Date().toISOString().split('T')[0]
                       });
@@ -165,8 +182,8 @@ export default function DashboardPage() {
 
                       // Upload to bucket
                       try {
-                        const fileUpload = await uploadData(
-                          { path: newNote?.filepath ?? `note-files/${identityId}/untitled.md`,
+                        await uploadData(
+                          { path: newNote?.filepath ?? newFilePath,
                             data: newNote?.content ?? "# untitled note",
                            }
                         ).result;
@@ -180,7 +197,8 @@ export default function DashboardPage() {
                           id: blankNote.id,
                           title: "untitled.md",
                           lastModified: blankNote.dateOfCreation || new Date().toISOString().split('T')[0],
-                          size: 'New'
+                          size: 'New',
+                          filepath: newFilePath // Ensure new docs have the path attached for deletion
                         }, ...prev]);
                       }
                     } catch {
@@ -228,24 +246,17 @@ export default function DashboardPage() {
                      <ChevronRight className="rotate-90 w-6 h-6" />
                    </button>
                 </div>
-                {/*THIS IS THE STORAGE DRAG AND DROP UPLOADER*/}
-                {/*use the file path defined in amplify/storage/resource.ts*/}
-                {/* https://ui.docs.amplify.aws/react/connected-components/storage/fileuploader/ */}
                 <FileUploader
                   acceptedFileTypes={['.md', 'text/markdown']}
                   maxFileCount={10}
-                  
                   path={({ identityId }) => `note-files/${identityId}/`}
                   onUploadSuccess={async({ key }) => {
-                    // 1. Extract the title safely
                     const fileName = key?.split('/').pop() || 'new-file.md';
                     try {
-                      // 2. Save the metadata to Amplify Data (DynamoDB)
-                      // Amplify automatically generates a unique string 'id' for this record
                       const { data: newNote, errors } = await client.models.Note.create({
                       title: fileName,
-                      filepath: key, // Store the S3 path so you can retrieve it later
-                      user_id: user?.userId, // Link it to the logged-in user
+                      filepath: key, 
+                      user_id: user?.userId, 
                       dateOfCreation: new Date().toISOString().split('T')[0]
                       });
 
@@ -254,15 +265,14 @@ export default function DashboardPage() {
                         return;
                       }
                      
-                    // 3. Update the UI using the real database ID
                       if (newNote) {
                         const savedNote = newNote as unknown as { id: string; dateOfCreation?: string };
                         setDocuments(prev => [{
-                          
-                          id: savedNote.id, // Using the real unique ID from DynamoDB
+                          id: savedNote.id, 
                           title: fileName,
                           lastModified: savedNote.dateOfCreation || new Date().toISOString().split('T')[0],
-                          size: 'Uploaded'
+                          size: 'Uploaded',
+                          filepath: key || '' // Added filepath here so uploaded items can be immediately deleted
                         }, ...prev]);
                       }
                     } catch (error) {
@@ -313,7 +323,14 @@ export default function DashboardPage() {
                       <div className="bg-blue-50 p-4 rounded-2xl text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm">
                         <FileText size={28} />
                       </div>
-                      <button className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Delete">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevents clicking the card
+                          handleDelete(doc.id, doc.filepath);
+                        }}
+                        className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" 
+                        title="Delete"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </div>
