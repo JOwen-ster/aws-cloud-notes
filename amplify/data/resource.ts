@@ -42,12 +42,32 @@ cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
 =========================================================================*/
 
 /*
-"use client"
+"use client";
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
+import { getCurrentUser } from "aws-amplify/auth";
+//import type { Schema } from "@/amplify/data/resource";
 
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
+const client = generateClient<Schema>(); // use this Data client for CRUDL requests
+
+  const doc_id = crypto.randomUUID();
+  const user = await getCurrentUser();
+
+  const { data: newNote, errors } = await client.models.Note.create({
+    id: doc_id,
+    title: "Untitled",
+    content: "",
+    wordCount: 0,
+    filepath: `note-files/${user?.userId}/${doc_id}`,
+    dateOfCreation: new Date().toISOString().split('T')[0],
+    user_id: user?.userId
+  });
+
+  if (errors) {
+    console.error("New note generation failed: ", JSON.stringify(errors, null, 2));
+    return;
+  }
+  */
+  
 
 /*== STEP 3 ===============================================================
 Fetch records from the database and use them in your frontend component.
