@@ -7,7 +7,7 @@ import { uploadData } from 'aws-amplify/storage';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Clock, LogOut, ChevronRight, User } from 'lucide-react';
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
 
 // Mock data for documents
 const MOCK_DOCS = [
@@ -19,6 +19,7 @@ const MOCK_DOCS = [
 
 import { type Schema } from "@/amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
+import { error } from 'console';
 
 const client = generateClient<Schema>({
   authMode: 'userPool'
@@ -143,19 +144,16 @@ export default function DashboardPage() {
                 <button 
                 // Creating blank new document
                   onClick={async () => {
-                    //console.log("new doc button clicked, starting try method");
                     try {
-                      const doc_id = crypto.randomUUID();
                       const user = (await getCurrentUser()).userId;
+                      const identityId = (await fetchAuthSession()).identityId;
 
-                      //console.log("starting new doc gen");
-
+                      // New metadata
                       const { errors, data: newNote } = await client.models.Note.create({
-                        id: doc_id,
                         title: "untitled.md",
-                        content: "",
+                        content: "# untitled note",
                         wordCount: 0,
-                        filepath: `note-files/${user}/${doc_id}`,
+                        filepath: `note-files/${identityId}/untitled.md`,
                         user_id: user,
                         dateOfCreation: new Date().toISOString().split('T')[0]
                       });
@@ -165,7 +163,16 @@ export default function DashboardPage() {
                         return;
                       }
 
-                      //console.log("starting to store new doc");
+                      // Upload to bucket
+                      try {
+                        const fileUpload = await uploadData(
+                          { path: newNote?.filepath ?? `note-files/${identityId}/untitled.md`,
+                            data: newNote?.content ?? "# untitled note",
+                           }
+                        ).result;
+                      } catch (err) {
+                        console.error("Upload failed:", err);
+                      }
 
                       if (newNote) {
                         const blankNote = newNote as unknown as { id: string; dateOfCreation?: string };
