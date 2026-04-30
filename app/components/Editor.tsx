@@ -15,24 +15,33 @@ import { BubbleMenu } from "@tiptap/react/menus";
 
 import { Icon, icons } from '@/app/components/icons';
 import { HeadingSelect, Separator, ToolbarButton } from '@/app/components/Toolbar';
+import Link from 'next/link'
+
+import { generateClient } from 'aws-amplify/data';
+import { downloadData, uploadData } from 'aws-amplify/storage';
+import { type Schema } from '@/amplify/data/resource';
+
+const client = generateClient<Schema>({ authMode: 'userPool' });
 
 // ─── Main Editor Component ─────────────────────────────────────────────────────
 
 interface EditorProps {
   initialFileName?: string;
-  initialContent?: string;
+  noteId: string
 }
 
 export default function Editor({
   initialFileName = "New Markdown File",
-  initialContent = "",
+  noteId
 }: EditorProps) {
-  const [markdownOutput, setMarkdownOutput] = useState(initialContent);
+  const [markdownOutput, setMarkdownOutput] = useState();
   const [fileName, setFileName] = useState(initialFileName);
   const [showMarkdown, setShowMarkdown] = useState(false);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const tableMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -56,7 +65,7 @@ export default function Editor({
         markedOptions: { gfm: true },
       }),
     ],
-    content: initialContent,
+    content: '',
     contentType: "markdown",
     onUpdate({ editor }) {
       const md = editor.getMarkdown?.() ?? "";
@@ -77,6 +86,45 @@ export default function Editor({
       setMarkdownOutput(md);
     }
   }, [editor]);
+
+  useEffect(() => {
+  if (!editor) return;
+
+  const loadNote = async () => {
+    try {
+      // Fetch note metadata from DynamoDB
+      const { data: note, errors } = await client.models.Note.get({ id: noteId });
+
+      if (errors || !note) {
+        setError('Note not found.');
+        return;
+      }
+
+      setFileName(note.title.replace(/\.md$/i, ''));
+
+      const filepath = (note as unknown as { filepath: string }).filepath;
+      if (!filepath) {
+        setError('No file path associated with this note.');
+        return;
+      }
+
+      // Download file content from S3
+      const { body } = await downloadData({ path: filepath }).result;
+      const text = await body.text();
+
+      // Set content in the editor
+      editor.commands.setContent(text, { contentType: 'markdown' });
+      setMarkdownOutput(editor.getMarkdown?.() ?? text);
+    } catch (err) {
+      console.error('Failed to load note:', err);
+      setError('Failed to load note.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadNote();
+}, [editor, noteId]); // runs once editor is ready
 
   // Close table menu on outside click
   useEffect(() => {
@@ -123,7 +171,52 @@ export default function Editor({
     URL.revokeObjectURL(url);
   }, [editor, fileName, markdownOutput]);
 
+  const [saving, setSaving] = useState(false);
+
+const handleCloudSave = useCallback(async () => {
+  if (!editor) return;
+  setSaving(true);
+  try {
+    const { data: note, errors } = await client.models.Note.get({ id: noteId });
+
+    if (errors || !note) {
+      console.error('Could not find note to save.');
+      return;
+    }
+
+    const filepath = (note as unknown as { filepath: string }).filepath;
+    const md = editor.getMarkdown?.() ?? '';
+
+    await uploadData({
+      path: filepath,
+      data: md,
+      options: { contentType: 'text/markdown' }
+    }).result;
+
+    // Also update the title in DynamoDB if it changed
+    await client.models.Note.update({
+      id: noteId,
+      title: `${fileName}.md`,
+    });
+
+  } catch (err) {
+    console.error('Failed to save note:', err);
+  } finally {
+    setSaving(false);
+  }
+}, [editor, noteId, fileName]);
+
   if (!editor) return null;
+if (loading) return (
+  <div className="flex items-center justify-center min-h-screen bg-[#f0f2f5]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+  </div>
+);
+if (error) return (
+  <div className="flex items-center justify-center min-h-screen bg-[#f0f2f5]">
+    <p className="text-red-500 font-medium">{error}</p>
+  </div>
+);
 
   // ─── Toolbar groups ─────────────────────────────────────────────────────────
 
@@ -277,6 +370,7 @@ export default function Editor({
         {/* Title row */}
         <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100">
           {/* Logo */}
+          <Link href={'/dashboard'}>
           <div className="flex items-center gap-2 mr-2">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -291,6 +385,7 @@ export default function Editor({
               </svg>
             </div>
           </div>
+          </Link>
 
           {/* File name */}
           <input
@@ -315,6 +410,24 @@ export default function Editor({
               <Icon d={icons.upload} size={14} />
               Open
             </button>
+            <button
+  onClick={handleCloudSave}
+  disabled={saving}
+  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white
+             rounded-lg transition-colors disabled:opacity-60"
+  style={{ background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)" }}
+>
+  {saving ? (
+    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+  ) : (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <polyline points="17 21 17 13 7 13 7 21"/>
+      <polyline points="7 3 7 8 15 8"/>
+    </svg>
+  )}
+  {saving ? 'Saving...' : 'Save'}
+</button>
             <button
               onClick={handleSave}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white
