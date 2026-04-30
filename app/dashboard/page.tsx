@@ -1,10 +1,11 @@
 'use client';
 
-import { useAuthenticator, Card, Text, Heading, SearchField } from '@aws-amplify/ui-react';
+import { useAuthenticator, Text, Heading, SearchField } from '@aws-amplify/ui-react';
 import { FileUploader } from '@aws-amplify/ui-react-storage';
 import '@aws-amplify/ui-react-storage/styles.css';
 import { uploadData, remove } from 'aws-amplify/storage';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link'
 import { useEffect, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Clock, LogOut, ChevronRight, User } from 'lucide-react';
 import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
@@ -313,44 +314,46 @@ export default function DashboardPage() {
 
             {/* Documents Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {documents.map((doc) => (
-                <div 
-                  key={doc.id} 
-                  className="group bg-white rounded-[2rem] border border-zinc-200 p-6 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer flex flex-col justify-between min-h-[220px]"
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="bg-blue-50 p-4 rounded-2xl text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm">
-                        <FileText size={28} />
-                      </div>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevents clicking the card
-                          handleDelete(doc.id, doc.filepath);
-                        }}
-                        className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" 
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                    <h3 className="text-lg font-bold text-zinc-900 mb-2 truncate group-hover:text-primary transition-colors">
-                      {doc.title}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
-                      <Clock size={14} />
-                      <span>Updated {doc.lastModified}</span>
-                    </div>
-                  </div>
+{documents.map((doc) => (
+  <Link key={doc.id} href={`/edit/${doc.id}`}>
+    <div 
+      className="group bg-white rounded-[2rem] border border-zinc-200 p-6 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer flex flex-col justify-between min-h-[220px]"
+    >
+      <div>
+        <div className="flex justify-between items-start mb-6">
+          <div className="bg-blue-50 p-4 rounded-2xl text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm">
+            <FileText size={28} />
+          </div>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();     // stops Link navigation
+              e.stopPropagation();    // stops bubbling
+              handleDelete(doc.id, doc.filepath);
+            }}
+            className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" 
+            title="Delete"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
+        <h3 className="text-lg font-bold text-zinc-900 mb-2 truncate group-hover:text-primary transition-colors">
+          {doc.title}
+        </h3>
+        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+          <Clock size={14} />
+          <span>Updated {doc.lastModified}</span>
+        </div>
+      </div>
 
-                  <div className="mt-6 pt-4 border-t border-zinc-50 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{doc.size}</span>
-                    <div className="flex items-center gap-1 text-primary text-sm font-black opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                      View <ChevronRight size={16} />
-                    </div>
-                  </div>
-                </div>
-              ))}
+      <div className="mt-6 pt-4 border-t border-zinc-50 flex items-center justify-between">
+        <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{doc.size}</span>
+        <div className="flex items-center gap-1 text-primary text-sm font-black opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+          View <ChevronRight size={16} />
+        </div>
+      </div>
+    </div>
+  </Link>
+))}
               
               {documents.length === 0 && (
                 <div className="col-span-full py-32 bg-white rounded-[3rem] border-2 border-dashed border-zinc-100 text-center shadow-inner">
