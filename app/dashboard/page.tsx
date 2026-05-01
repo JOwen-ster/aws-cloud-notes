@@ -113,7 +113,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-zinc-900 leading-none mb-1">
-              User
+              {user?.signInDetails?.loginId ?? "User"}
             </span>
             <span className="text-[10px] text-zinc-400 uppercase tracking-tighter font-semibold">
               Personal Space
@@ -288,12 +288,12 @@ export default function DashboardPage() {
                  </div>
               </div>
               <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-6 hover:shadow-xl hover:shadow-blue-500/5 transition-all">
-                 <Text className="text-zinc-400 text-xs font-black uppercase tracking-widest mb-3">Total Storage</Text>
+                 <Text className="text-zinc-400 text-xs font-black uppercase tracking-widest mb-3">Total Storage Left</Text>
                  <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
                       <FileText size={20} />
                     </div>
-                    <Heading level={2} className="text-2xl font-bold text-zinc-900">12.5 KB</Heading>
+                    <Heading level={2} className="text-2xl font-bold text-zinc-900">5GB</Heading>
                  </div>
               </div>
               <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-6 hover:shadow-xl hover:shadow-blue-500/5 transition-all">
