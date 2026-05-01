@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthenticator, Text, Heading, SearchField } from '@aws-amplify/ui-react';
+import { useAuthenticator, Text, Heading } from '@aws-amplify/ui-react';
 import { FileUploader } from '@aws-amplify/ui-react-storage';
 import '@aws-amplify/ui-react-storage/styles.css';
 import { uploadData, remove } from 'aws-amplify/storage';
@@ -142,14 +142,6 @@ export default function DashboardPage() {
            </div>
 
            <div className="flex items-center gap-6">
-             <div className="w-80">
-                <SearchField
-                  label="Search"
-                  placeholder="Find a document..."
-                  size="small"
-                  labelHidden
-                />
-             </div>
              <div className="h-6 w-[1px] bg-zinc-200" />
              <div className="flex items-center gap-3">
                <button 
