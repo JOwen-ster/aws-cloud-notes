@@ -113,7 +113,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-zinc-900 leading-none mb-1">
-              User
+              {user?.username ?? "User"}
             </span>
             <span className="text-[10px] text-zinc-400 uppercase tracking-tighter font-semibold">
               Personal Space
